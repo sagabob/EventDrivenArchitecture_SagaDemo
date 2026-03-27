@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Newsletter.Api/Newsletter.Api.csproj" />
+  </Folder>
+</Solution>
