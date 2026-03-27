@@ -1,10 +1,15 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Newsletter.Api.Features.Newsletters.Handlers;
+using System;
+using Newsletter.Api.Databases;
 
-var bld = WebApplication.CreateBuilder();
+var builder = WebApplication.CreateBuilder();
 
 // Register FastEndpoints and configure its Swagger document once
-bld.Services.AddFastEndpoints()
+builder.Services.AddFastEndpoints()
     .SwaggerDocument(o =>
     {
         o.DocumentSettings = s =>
@@ -14,7 +19,26 @@ bld.Services.AddFastEndpoints()
         };
     });
 
-var app = bld.Build();
+builder.Services.AddDbContext<NewsletterDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
+
+builder.Services.AddMassTransit(x =>
+{
+    // Register the consumer
+    x.AddConsumer<TestSendNewsletterHandler>();
+
+    // Configure transport
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(new Uri(builder.Configuration.GetConnectionString("RabbitMQ")!));
+
+        // Auto-create endpoints for registered consumers
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
+
+var app = builder.Build();
 
 // Enable endpoints and FastEndpoints' Swagger middleware
 app.UseFastEndpoints()

@@ -1,8 +1,8 @@
 ﻿using FastEndpoints;
 
-namespace Newsletter.Api.Features.Newsletters
+namespace Newsletter.Api.Features.Newsletters.Endpoints
 {
-    public class NewsletterGetEndpoint : Endpoint<EmptyRequest, string>
+    public class GetEndpoint : Endpoint<EmptyRequest, string>
     {
         public override void Configure()
         {
