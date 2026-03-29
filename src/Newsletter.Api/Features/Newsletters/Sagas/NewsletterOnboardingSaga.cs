@@ -1,12 +1,16 @@
 using MassTransit;
+using Microsoft.Extensions.Options;
+using Newsletter.Api.Features.Newsletters.Configuration;
 using Newsletter.Api.Features.Newsletters.Messages;
 
 namespace Newsletter.Api.Features.Newsletters.Sagas;
 
 public class NewsletterOnboardingSaga : MassTransitStateMachine<NewsletterOnboardingSagaData>
 {
-    public NewsletterOnboardingSaga()
+    public NewsletterOnboardingSaga(IOptions<NewsletterOnboardingOptions> options)
     {
+        var stepDelay = TimeSpan.FromMilliseconds(Math.Max(0, options.Value.StepDelayMilliseconds));
+
         InstanceState(x => x.CurrentState);
 
         Event(() => SubscriberCreated, e => e.CorrelateById(m => m.Message.SubscriberId));
@@ -23,12 +27,14 @@ public class NewsletterOnboardingSaga : MassTransitStateMachine<NewsletterOnboar
                     context.Saga.SubscriberId = context.Message.SubscriberId;
                     context.Saga.Email = context.Message.Email;
                 })
+                .ThenAsync(async context => await Task.Delay(stepDelay, context.CancellationToken))
                 .Publish(context => new SendWelcomeEmail(context.Saga.SubscriberId, context.Saga.Email))
                 .TransitionTo(Welcoming));
 
         During(Welcoming,
             When(WelcomeEmailSent)
                 .Then(context => context.Saga.WelcomeEmailSent = true)
+                .ThenAsync(async context => await Task.Delay(stepDelay, context.CancellationToken))
                 .Publish(context => new SendFollowUpEmail(context.Saga.SubscriberId, context.Saga.Email))
                 .TransitionTo(FollowingUp),
             When(SendWelcomeEmailFaulted)
@@ -43,6 +49,7 @@ public class NewsletterOnboardingSaga : MassTransitStateMachine<NewsletterOnboar
                     context.Saga.OnboardingCompleted = true;
                 })
                 .TransitionTo(Onboarding)
+                .ThenAsync(async context => await Task.Delay(stepDelay, context.CancellationToken))
                 .Publish(context => new OnboardingCompleted
                 {
                     SubscriberId = context.Saga.SubscriberId,

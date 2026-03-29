@@ -5,6 +5,7 @@ using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Newsletter.Api.Databases;
+using Newsletter.Api.Features.Newsletters.Configuration;
 using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Extensions;
 
@@ -25,6 +26,9 @@ builder.Services.AddDbContext<NewsletterDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
 builder.Services.AddNewsletterMassTransit(builder.Configuration);
+
+builder.Services.Configure<NewsletterOnboardingOptions>(
+    builder.Configuration.GetSection(NewsletterOnboardingOptions.SectionPath));
 
 builder.Services.Configure<BrevoOptions>(
     builder.Configuration.GetSection(BrevoOptions.SectionName));

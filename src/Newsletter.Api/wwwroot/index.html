@@ -424,6 +424,51 @@
             color: #f87171;
             font-size: 0.8rem;
         }
+
+        .progress-cell {
+            min-width: 200px;
+            max-width: 280px;
+        }
+
+        .progress-track {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--primary), #a78bfa);
+            width: 0%;
+            transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-fill.fault {
+            background: linear-gradient(90deg, #dc2626, #f87171);
+        }
+
+        .progress-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .progress-step-text {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .delay-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -467,9 +512,10 @@
 
     <div class="queue-container tab-panel" id="panel-subscribers" role="tabpanel" data-panel="subscribers">
         <div class="action-card" style="margin-bottom: 1.25rem;">
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem; text-align: center;">
                 Publishes <code style="color: var(--primary);">SubscribeToNewsletter</code> via the outbox → onboarding saga.
             </p>
+            <p class="delay-hint" id="onboardingDelayHint">Loading step timing…</p>
             <form id="subscribeForm" class="form-group">
                 <input type="email" id="subscribeEmailInput" placeholder="Email to subscribe…" required autocomplete="email" name="email">
                 <button type="submit" class="btn-primary">Subscribe</button>
@@ -486,8 +532,8 @@
                 <thead>
                 <tr>
                     <th>Email</th>
+                    <th>Progress</th>
                     <th>Subscribed</th>
-                    <th>Onboarding</th>
                     <th>Completed</th>
                     <th>Fault</th>
                 </tr>
@@ -506,6 +552,8 @@
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
 
+    let pollIntervalMs = 3000;
+
     tabButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
             const name = btn.dataset.tab;
@@ -517,6 +565,8 @@
                 const on = p.dataset.panel === name;
                 p.classList.toggle('active', on);
             });
+            pollIntervalMs = name === 'subscribers' ? 1000 : 3000;
+            restartPolling();
             if (name === 'subscribers') {
                 fetchSubscribers();
             }
@@ -544,7 +594,7 @@
 
     const startPolling = () => {
         if (!pollInterval) {
-            pollInterval = setInterval(tick, 3000);
+            pollInterval = setInterval(tick, pollIntervalMs);
             liveIndicator.style.animation = 'pulse 1.5s infinite';
             liveIndicator.style.backgroundColor = '#ef4444';
             liveIndicator.style.boxShadow = '0 0 8px #ef4444';
@@ -560,6 +610,13 @@
             liveIndicator.style.backgroundColor = 'var(--border-color)';
             liveIndicator.style.boxShadow = 'none';
             refreshBtn.disabled = false;
+        }
+    };
+
+    const restartPolling = () => {
+        stopPolling();
+        if (autoMonitorToggle.checked) {
+            startPolling();
         }
     };
 
@@ -728,6 +785,18 @@
         return `status-badge status-${s.replace(/\s+/g, '')}`;
     };
 
+    const progressMeta = (status) => {
+        const s = String(status || 'Pending');
+        const map = {
+            Pending: { pct: 12, step: 1, label: 'Pending', fault: false },
+            Welcoming: { pct: 40, step: 2, label: 'Welcoming', fault: false },
+            FollowingUp: { pct: 68, step: 3, label: 'Following up', fault: false },
+            Completed: { pct: 100, step: 4, label: 'Completed', fault: false },
+            Faulted: { pct: 100, step: 4, label: 'Faulted', fault: true }
+        };
+        return map[s] || map.Pending;
+    };
+
     let subscribersInitial = true;
 
     const fetchSubscribers = async () => {
@@ -738,7 +807,7 @@
             subscriberCount.textContent = `${rows.length} subscriber${rows.length === 1 ? '' : 's'}`;
 
             if (rows.length === 0) {
-                subscriberTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">No subscribers yet. Use the API to POST /api/newsletters/subscribe.</td></tr>';
+                subscriberTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">No subscribers yet. Subscribe above or POST /api/newsletters/subscribe.</td></tr>';
                 subscribersInitial = false;
                 return;
             }
@@ -749,11 +818,22 @@
                     : '—';
                 const fault = r.onboardingFaultReason ? escapeHtml(r.onboardingFaultReason) : '—';
                 const st = r.onboardingStatus || 'Pending';
+                const pm = progressMeta(st);
+                const fillCls = pm.fault ? 'progress-fill fault' : 'progress-fill';
+                const stepText = pm.fault ? 'Failed' : `Step ${pm.step} / 4`;
                 return `
                     <tr>
                         <td>${escapeHtml(r.email)}</td>
+                        <td class="progress-cell">
+                            <div class="progress-track" title="${escapeHtml(st)}">
+                                <div class="${fillCls}" style="width: ${pm.pct}%"></div>
+                            </div>
+                            <div class="progress-meta">
+                                <span class="${statusClass(st)}">${escapeHtml(pm.label)}</span>
+                                <span class="progress-step-text">${stepText}</span>
+                            </div>
+                        </td>
                         <td class="mono">${formatTime(r.subscribedOnUtc)}</td>
-                        <td><span class="${statusClass(st)}">${escapeHtml(st)}</span></td>
                         <td class="mono">${completed}</td>
                         <td class="fault-cell" title="${fault}">${fault}</td>
                     </tr>`;
@@ -772,6 +852,25 @@
         d.textContent = s;
         return d.innerHTML;
     }
+
+    (async () => {
+        try {
+            const r = await fetch('/api/newsletters/onboarding-settings');
+            if (r.ok) {
+                const j = await r.json();
+                const ms = j.stepDelayMilliseconds ?? 2500;
+                const hint = document.getElementById('onboardingDelayHint');
+                if (hint) {
+                    hint.textContent = `Server delay between saga steps: ${(ms / 1000).toFixed(1)}s. This tab polls every 1s so the bar can track each status.`;
+                }
+            }
+        } catch {
+            const hint = document.getElementById('onboardingDelayHint');
+            if (hint) {
+                hint.textContent = '';
+            }
+        }
+    })();
 
     // Start tracking
     fetchMessages();
