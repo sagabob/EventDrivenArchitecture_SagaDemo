@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Messages;
 
@@ -15,12 +15,12 @@ public class SubscribeToNewsletterHandler(NewsletterDbContext dbContext) : ICons
             SubscribedOnUtc = DateTime.UtcNow
         });
 
-        await dbContext.SaveChangesAsync();
-
         await context.Publish(new SubscriberCreated
         {
             SubscriberId = subscriber.Entity.Id,
             Email = context.Message.Email
         });
+
+        await dbContext.SaveChangesAsync();
     }
 }

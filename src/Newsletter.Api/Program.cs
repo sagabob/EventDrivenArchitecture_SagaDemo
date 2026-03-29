@@ -1,11 +1,14 @@
+using brevo_csharp.Api;
+using brevo_csharp.Client;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Handlers;
-using System;
+using Newsletter.Api.Features.Newsletters.Sagas;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -29,8 +32,20 @@ builder.Services.AddMassTransit(busConfigurator =>
 
     busConfigurator.AddDelayedMessageScheduler();
 
-    // Register the consumer
     busConfigurator.AddConsumer<TestSendNewsletterHandler>();
+    busConfigurator.AddConsumer<SubscribeToNewsletterHandler>();
+    busConfigurator.AddConsumer<SendWelcomeEmailHandler>();
+    busConfigurator.AddConsumer<SendFollowUpEmailHandler>();
+    busConfigurator.AddConsumer<OnboardingCompletedHandler>();
+    busConfigurator.AddConsumer<SendWelcomeEmailFaultedHandler>();
+
+    busConfigurator.AddSagaStateMachine<NewsletterOnboardingSaga, NewsletterOnboardingSagaData>()
+        .EntityFrameworkRepository(r =>
+        {
+            r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+            r.ExistingDbContext<NewsletterDbContext>();
+            r.UsePostgres();
+        });
 
     busConfigurator.AddEntityFrameworkOutbox<NewsletterDbContext>(o =>
     {
@@ -51,16 +66,16 @@ builder.Services.AddMassTransit(busConfigurator =>
 builder.Services.Configure<BrevoOptions>(
     builder.Configuration.GetSection(BrevoOptions.SectionName));
 
-builder.Services.AddTransient<brevo_csharp.Api.ITransactionalEmailsApi>(sp =>
+builder.Services.AddTransient<ITransactionalEmailsApi>(sp =>
 {
-    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BrevoOptions>>().Value;
+    var options = sp.GetRequiredService<IOptions<BrevoOptions>>().Value;
 
-    var config = new brevo_csharp.Client.Configuration
+    var config = new Configuration
     {
         ApiKey = { ["api-key"] = options.ApiKey }
     };
 
-    return new brevo_csharp.Api.TransactionalEmailsApi(config);
+    return new TransactionalEmailsApi(config);
 });
 
 builder.Services.AddTransient<IEmailService, BrevoEmailService>();

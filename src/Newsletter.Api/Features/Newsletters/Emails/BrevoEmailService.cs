@@ -19,6 +19,12 @@ public class BrevoEmailService(ITransactionalEmailsApi emailsApi, IOptions<Brevo
             "<p>Just checking in to see if you are enjoying our content!</p>");
     }
 
+    public async Task SendTestEmailAsync(string email)
+    {
+        await SendAsync(email, "Subscriber", "Testing sending newsletter?",
+            "<p>A quick check to see whether the sending newsletter service is working!</p>");
+    }
+
     private async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)
     {
         var fromEmail = options.Value.SenderEmail;
@@ -31,11 +37,5 @@ public class BrevoEmailService(ITransactionalEmailsApi emailsApi, IOptions<Brevo
         );
 
         await emailsApi.SendTransacEmailAsync(email);
-    }
-
-    public async Task SendTestEmailAsync(string email)
-    {
-        await SendAsync(email, "Subscriber", "Testing sending newsletter?",
-            "<p>A quick check to see whether the sending newsletter service is working!</p>");
     }
 }

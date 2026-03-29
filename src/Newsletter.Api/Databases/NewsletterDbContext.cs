@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Newsletter.Api.Features.Newsletters.Sagas;
 
@@ -10,8 +10,14 @@ public class NewsletterDbContext(DbContextOptions<NewsletterDbContext> options) 
 
     public DbSet<Subscriber> Subscribers { get; set; }
 
+    public DbSet<NewsletterOnboardingSagaData> SagaData { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfiguration(new NewsletterOnboardingSagaMap());
+
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();

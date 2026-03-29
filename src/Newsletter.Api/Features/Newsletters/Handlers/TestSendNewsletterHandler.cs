@@ -6,7 +6,8 @@ using Newsletter.Api.Features.Newsletters.Messages;
 
 namespace Newsletter.Api.Features.Newsletters.Handlers;
 
-public class TestSendNewsletterHandler(NewsletterDbContext dbContext, IEmailService emailService) : IConsumer<TestSendNewsletter>
+public class TestSendNewsletterHandler(NewsletterDbContext dbContext, IEmailService emailService)
+    : IConsumer<TestSendNewsletter>
 {
     public async Task Consume(ConsumeContext<TestSendNewsletter> context)
     {
@@ -48,6 +49,5 @@ public class TestSendNewsletterHandler(NewsletterDbContext dbContext, IEmailServ
             Console.WriteLine($"Error processing TestSendNewsletter: {e.Message}");
             //TODO
         }
-
     }
 }

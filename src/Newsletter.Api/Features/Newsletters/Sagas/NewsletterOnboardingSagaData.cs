@@ -1,4 +1,3 @@
-﻿using System.ComponentModel.DataAnnotations;
 using MassTransit;
 
 namespace Newsletter.Api.Features.Newsletters.Sagas;
@@ -14,7 +13,7 @@ public class NewsletterOnboardingSagaData : SagaStateMachineInstance
     public bool OnboardingCompleted { get; set; }
     public string? ErrorMessage { get; set; }
 
-    [Timestamp] public byte[]? RowVersion { get; set; }
+    public byte[]? RowVersion { get; set; }
 
     public Guid CorrelationId { get; set; }
 }
