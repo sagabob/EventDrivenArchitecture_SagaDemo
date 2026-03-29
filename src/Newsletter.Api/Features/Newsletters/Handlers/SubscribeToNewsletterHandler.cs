@@ -12,7 +12,8 @@ public class SubscribeToNewsletterHandler(NewsletterDbContext dbContext) : ICons
         {
             Id = Guid.NewGuid(),
             Email = context.Message.Email,
-            SubscribedOnUtc = DateTime.UtcNow
+            SubscribedOnUtc = DateTime.UtcNow,
+            OnboardingStatus = SubscriberOnboardingStatus.Pending
         });
 
         await context.Publish(new SubscriberCreated

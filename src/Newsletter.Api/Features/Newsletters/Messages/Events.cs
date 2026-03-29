@@ -1,4 +1,4 @@
-namespace Newsletter.Api.Features.Newsletters.Messages;
+﻿namespace Newsletter.Api.Features.Newsletters.Messages;
 
 public record SubscriberCreated
 {

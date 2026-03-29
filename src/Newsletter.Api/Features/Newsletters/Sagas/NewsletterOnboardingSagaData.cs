@@ -1,4 +1,4 @@
-using MassTransit;
+﻿using MassTransit;
 
 namespace Newsletter.Api.Features.Newsletters.Sagas;
 

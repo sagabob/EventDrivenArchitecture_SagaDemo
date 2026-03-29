@@ -2,13 +2,11 @@ using brevo_csharp.Api;
 using brevo_csharp.Client;
 using FastEndpoints;
 using FastEndpoints.Swagger;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Emails;
-using Newsletter.Api.Features.Newsletters.Handlers;
-using Newsletter.Api.Features.Newsletters.Sagas;
+using Newsletter.Api.Features.Newsletters.Extensions;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -26,42 +24,7 @@ builder.Services.AddFastEndpoints()
 builder.Services.AddDbContext<NewsletterDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
-builder.Services.AddMassTransit(busConfigurator =>
-{
-    busConfigurator.SetKebabCaseEndpointNameFormatter();
-
-    busConfigurator.AddDelayedMessageScheduler();
-
-    busConfigurator.AddConsumer<TestSendNewsletterHandler>();
-    busConfigurator.AddConsumer<SubscribeToNewsletterHandler>();
-    busConfigurator.AddConsumer<SendWelcomeEmailHandler>();
-    busConfigurator.AddConsumer<SendFollowUpEmailHandler>();
-    busConfigurator.AddConsumer<OnboardingCompletedHandler>();
-    busConfigurator.AddConsumer<SendWelcomeEmailFaultedHandler>();
-
-    busConfigurator.AddSagaStateMachine<NewsletterOnboardingSaga, NewsletterOnboardingSagaData>()
-        .EntityFrameworkRepository(r =>
-        {
-            r.ConcurrencyMode = ConcurrencyMode.Pessimistic;
-            r.ExistingDbContext<NewsletterDbContext>();
-            r.UsePostgres();
-        });
-
-    busConfigurator.AddEntityFrameworkOutbox<NewsletterDbContext>(o =>
-    {
-        o.UsePostgres();
-        o.UseBusOutbox();
-    });
-
-    // Configure transport
-    busConfigurator.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host(new Uri(builder.Configuration.GetConnectionString("RabbitMQ")!));
-
-        // Auto-create endpoints for registered consumers
-        cfg.ConfigureEndpoints(context);
-    });
-});
+builder.Services.AddNewsletterMassTransit(builder.Configuration);
 
 builder.Services.Configure<BrevoOptions>(
     builder.Configuration.GetSection(BrevoOptions.SectionName));

@@ -16,6 +16,14 @@ public class NewsletterDbContext(DbContextOptions<NewsletterDbContext> options) 
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Subscriber>(entity =>
+        {
+            entity.Property(e => e.OnboardingStatus)
+                .HasConversion<string>()
+                .HasMaxLength(32);
+            entity.Property(e => e.OnboardingFaultReason).HasMaxLength(2000);
+        });
+
         modelBuilder.ApplyConfiguration(new NewsletterOnboardingSagaMap());
 
         modelBuilder.AddInboxStateEntity();

@@ -42,6 +42,7 @@ public class NewsletterOnboardingSaga : MassTransitStateMachine<NewsletterOnboar
                     context.Saga.FollowUpEmailSent = true;
                     context.Saga.OnboardingCompleted = true;
                 })
+                .TransitionTo(Onboarding)
                 .Publish(context => new OnboardingCompleted
                 {
                     SubscriberId = context.Saga.SubscriberId,
@@ -57,6 +58,7 @@ public class NewsletterOnboardingSaga : MassTransitStateMachine<NewsletterOnboar
 
     public State Welcoming { get; } = null!;
     public State FollowingUp { get; } = null!;
+    public State Onboarding { get; } = null!;
     public State Faulted { get; } = null!;
 
     public Event<SubscriberCreated> SubscriberCreated { get; } = null!;
