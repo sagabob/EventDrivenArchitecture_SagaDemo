@@ -18,7 +18,7 @@ public class ListTestMessagesEndpoint(NewsletterDbContext dbContext) : Endpoint<
             .OrderByDescending(m => m.SentOnUtc)
             .Take(50)
             .ToListAsync(ct);
-            
+
         await Send.OkAsync(messages, ct);
     }
 }
