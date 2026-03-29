@@ -439,14 +439,13 @@
         <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="subscribers">Subscribers</button>
     </nav>
 
-    <div class="action-card">
-        <form id="dispatchForm" class="form-group">
-            <input type="email" id="emailInput" placeholder="Enter test email address..." required autocomplete="off">
-            <button type="submit" class="btn-primary">Queue Message</button>
-        </form>
-    </div>
-
     <div class="queue-container tab-panel active" id="panel-test" role="tabpanel" data-panel="test">
+        <div class="action-card" style="margin-bottom: 1.25rem;">
+            <form id="dispatchForm" class="form-group">
+                <input type="email" id="emailInput" placeholder="Enter test email address..." required autocomplete="off">
+                <button type="submit" class="btn-primary">Queue Message</button>
+            </form>
+        </div>
         <div class="queue-header">
             <h2>
                 <div class="live-indicator" id="liveIndicator"></div> Live Messages
@@ -467,6 +466,15 @@
     </div>
 
     <div class="queue-container tab-panel" id="panel-subscribers" role="tabpanel" data-panel="subscribers">
+        <div class="action-card" style="margin-bottom: 1.25rem;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">
+                Publishes <code style="color: var(--primary);">SubscribeToNewsletter</code> via the outbox → onboarding saga.
+            </p>
+            <form id="subscribeForm" class="form-group">
+                <input type="email" id="subscribeEmailInput" placeholder="Email to subscribe…" required autocomplete="email" name="email">
+                <button type="submit" class="btn-primary">Subscribe</button>
+            </form>
+        </div>
         <div class="queue-header">
             <h2>Subscribers</h2>
             <div class="header-controls">
@@ -476,16 +484,18 @@
         <div class="subscriber-table-wrap">
             <table class="subscriber-table">
                 <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Subscribed</th>
-                        <th>Onboarding</th>
-                        <th>Completed</th>
-                        <th>Fault</th>
-                    </tr>
+                <tr>
+                    <th>Email</th>
+                    <th>Subscribed</th>
+                    <th>Onboarding</th>
+                    <th>Completed</th>
+                    <th>Fault</th>
+                </tr>
                 </thead>
                 <tbody id="subscriberTableBody">
-                    <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+                <tr>
+                    <td colspan="5" class="empty-state">Loading…</td>
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -517,6 +527,8 @@
     const queueCount = document.getElementById('queueCount');
     const dispatchForm = document.getElementById('dispatchForm');
     const emailInput = document.getElementById('emailInput');
+    const subscribeForm = document.getElementById('subscribeForm');
+    const subscribeEmailInput = document.getElementById('subscribeEmailInput');
     const liveIndicator = document.getElementById('liveIndicator');
     const autoMonitorToggle = document.getElementById('autoMonitorToggle');
     const refreshBtn = document.getElementById('refreshBtn');
@@ -597,6 +609,40 @@
             }
         } catch (error) {
             console.error('API Error:', error);
+            alert('Failed to connect to API.');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    });
+
+    subscribeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = subscribeEmailInput.value.trim();
+        if (!email) return;
+
+        const btn = subscribeForm.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+
+        try {
+            btn.innerText = 'Subscribing…';
+            btn.disabled = true;
+
+            const res = await fetch('/api/newsletters/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            if (res.ok) {
+                subscribeEmailInput.value = '';
+                await fetchSubscribers();
+            } else {
+                const errText = await res.text().catch(() => '');
+                alert(errText || 'Subscribe failed.');
+            }
+        } catch (error) {
+            console.error('Subscribe API error:', error);
             alert('Failed to connect to API.');
         } finally {
             btn.innerText = originalText;
