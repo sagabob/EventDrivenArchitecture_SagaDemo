@@ -2,9 +2,8 @@ using FastEndpoints;
 using FastEndpoints.Swagger;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using Newsletter.Api.Features.Newsletters.Handlers;
-using System;
 using Newsletter.Api.Databases;
+using Newsletter.Api.Features.Newsletters.Handlers;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -42,6 +41,6 @@ var app = builder.Build();
 
 // Enable endpoints and FastEndpoints' Swagger middleware
 app.UseFastEndpoints()
-   .UseSwaggerGen();
+    .UseSwaggerGen();
 
 app.Run();
