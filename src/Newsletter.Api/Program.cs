@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Handlers;
+using System;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -22,13 +23,23 @@ builder.Services.AddFastEndpoints()
 builder.Services.AddDbContext<NewsletterDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(busConfigurator =>
 {
+    busConfigurator.SetKebabCaseEndpointNameFormatter();
+
+    busConfigurator.AddDelayedMessageScheduler();
+
     // Register the consumer
-    x.AddConsumer<TestSendNewsletterHandler>();
+    busConfigurator.AddConsumer<TestSendNewsletterHandler>();
+
+    busConfigurator.AddEntityFrameworkOutbox<NewsletterDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
 
     // Configure transport
-    x.UsingRabbitMq((context, cfg) =>
+    busConfigurator.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(new Uri(builder.Configuration.GetConnectionString("RabbitMQ")!));
 

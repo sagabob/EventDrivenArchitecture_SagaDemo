@@ -2,6 +2,7 @@
 
 public record SubscribeToNewsletter(string Email);
 
-public record TrackIdResponse(Guid TrackId);
+public record SendWelcomeEmail(Guid SubscriberId, string Email);
 
-public record TestSendNewsletter(Guid MessageId, string Email);
+public record SendFollowUpEmail(Guid SubscriberId, string Email);
+

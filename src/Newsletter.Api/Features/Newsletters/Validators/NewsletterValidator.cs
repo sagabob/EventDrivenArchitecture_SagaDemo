@@ -2,7 +2,7 @@
 using FluentValidation;
 using Newsletter.Api.Features.Newsletters.Messages;
 
-namespace Newsletter.Api.Features.Newsletters;
+namespace Newsletter.Api.Features.Newsletters.Validators;
 
 public class NewsletterValidator : Validator<SubscribeToNewsletter>
 {

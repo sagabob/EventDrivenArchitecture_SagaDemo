@@ -25,9 +25,9 @@ public class SubmitTestNewsletterEndpoint(IPublishEndpoint publisher, Newsletter
             ReceiveOnUtc = null
         });
 
-        await dbContext.SaveChangesAsync(ct);
-
         await publisher.Publish(new TestSendNewsletter(testRecord.Entity.Id, req.Email), ct);
+
+        await dbContext.SaveChangesAsync(ct);
 
         var response = new TrackIdResponse(testRecord.Entity.Id);
         await Send.OkAsync(response, ct);
