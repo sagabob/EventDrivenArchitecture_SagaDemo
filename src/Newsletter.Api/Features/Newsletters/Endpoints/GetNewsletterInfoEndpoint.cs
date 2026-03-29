@@ -1,12 +1,12 @@
-﻿using FastEndpoints;
+using FastEndpoints;
 
 namespace Newsletter.Api.Features.Newsletters.Endpoints;
 
-public class GetEndpoint : Endpoint<EmptyRequest, string>
+public class GetNewsletterInfoEndpoint : Endpoint<EmptyRequest, string>
 {
     public override void Configure()
     {
-        Get("/newsletter/info");
+        Get("/api/newsletters/info");
         AllowAnonymous();
     }
 

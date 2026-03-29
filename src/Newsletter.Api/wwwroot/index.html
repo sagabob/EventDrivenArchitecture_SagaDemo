@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event-Driven Architecture Queue Live Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: #151e32;
+            --surface-hover: #1e2842;
+            --border-color: #2a3441;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --status-pending: #f59e0b;
+            --status-pending-bg: rgba(245, 158, 11, 0.1);
+            --status-success: #10b981;
+            --status-success-bg: rgba(16, 185, 129, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #c084fc, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .action-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type="email"] {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.875rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="email"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        button.btn-primary {
+            padding: 0.875rem 2rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        button.btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .queue-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .queue-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .queue-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .live-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .slider {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+            background-color: var(--border-color);
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        button.btn-refresh {
+            padding: 0.4rem 0.8rem;
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 0.4rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button.btn-refresh:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+        }
+
+        button.btn-refresh:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+            color: var(--border-color);
+        }
+
+        .queue-list {
+            list-style: none;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        /* Custom scrollbar */
+        .queue-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .queue-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .queue-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .queue-item:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .queue-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .item-email {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .item-id {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .item-time {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .item-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            color: var(--status-pending);
+            background-color: var(--status-pending-bg);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-success {
+            color: var(--status-success);
+            background-color: var(--status-success-bg);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Event-Driven Queue</h1>
+        <p class="subtitle">Visualize test messages routing through RabbitMQ</p>
+    </header>
+
+    <div class="action-card">
+        <form id="dispatchForm" class="form-group">
+            <input type="email" id="emailInput" placeholder="Enter test email address..." required autocomplete="off">
+            <button type="submit" class="btn-primary">Queue Message</button>
+        </form>
+    </div>
+
+    <div class="queue-container">
+        <div class="queue-header">
+            <h2><div class="live-indicator" id="liveIndicator"></div> Live Messages</h2>
+            <div class="header-controls">
+                <label class="toggle-switch" title="Toggle Auto Monitoring">
+                    <input type="checkbox" id="autoMonitorToggle" checked>
+                    <span class="slider"></span>
+                    <span class="toggle-label">Auto</span>
+                </label>
+                <button id="refreshBtn" class="btn-refresh" disabled>Refresh</button>
+                <span id="queueCount" style="color: var(--text-muted); font-size: 0.9rem; margin-left: 0.5rem;">0 queued</span>
+            </div>
+        </div>
+        <ul class="queue-list" id="queueList">
+            <div class="empty-state">Loading messages...</div>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const queueList = document.getElementById('queueList');
+    const queueCount = document.getElementById('queueCount');
+    const dispatchForm = document.getElementById('dispatchForm');
+    const emailInput = document.getElementById('emailInput');
+    const liveIndicator = document.getElementById('liveIndicator');
+    const autoMonitorToggle = document.getElementById('autoMonitorToggle');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    let pollInterval = null;
+
+    const startPolling = () => {
+        if (!pollInterval) {
+            pollInterval = setInterval(fetchMessages, 3000);
+            liveIndicator.style.animation = 'pulse 1.5s infinite';
+            liveIndicator.style.backgroundColor = '#ef4444';
+            liveIndicator.style.boxShadow = '0 0 8px #ef4444';
+            refreshBtn.disabled = true;
+        }
+    };
+
+    const stopPolling = () => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            liveIndicator.style.animation = 'none';
+            liveIndicator.style.backgroundColor = 'var(--border-color)';
+            liveIndicator.style.boxShadow = 'none';
+            refreshBtn.disabled = false;
+        }
+    };
+
+    autoMonitorToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            startPolling();
+        } else {
+            stopPolling();
+        }
+    });
+
+    refreshBtn.addEventListener('click', () => {
+        refreshBtn.innerText = '↺';
+        fetchMessages().finally(() => {
+            refreshBtn.innerText = 'Refresh';
+        });
+    });
+
+    let knownMessageIds = new Set();
+    let isInitialLoad = true;
+
+    // Submit a new email to the queue
+    dispatchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        const btn = dispatchForm.querySelector('button');
+        const originalText = btn.innerText;
+
+        try {
+            btn.innerText = 'Sending...';
+            btn.disabled = true;
+
+            const res = await fetch('/api/newsletters/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Email: email })
+            });
+
+            if (res.ok) {
+                emailInput.value = '';
+                // Trigger immediate fetch to feel snappy
+                fetchMessages(); 
+            } else {
+                alert('Error queuing message.');
+            }
+        } catch (error) {
+            console.error('API Error:', error);
+            alert('Failed to connect to API.');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    });
+
+    const formatTime = (isoString) => {
+        const d = new Date(isoString);
+        return d.toLocaleString(undefined, { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            fractionalSecondDigits: 3 
+        });
+    };
+
+    const renderMessage = (msg) => {
+        const isReceived = msg.receiveOnUtc !== null;
+        
+        const statusClass = isReceived ? 'status-success' : 'status-pending';
+        const statusText = isReceived ? 'Processed' : 'In Queue';
+        const statusIcon = isReceived ? '✓' : '↻';
+        
+        let timeText = `Sent: ${formatTime(msg.sentOnUtc)}`;
+        if (isReceived) {
+            const sent = new Date(msg.sentOnUtc);
+            const rcvd = new Date(msg.receiveOnUtc);
+            const ms = rcvd - sent;
+            timeText += ` • Received: ${formatTime(msg.receiveOnUtc)} (${ms}ms)`;
+        }
+
+        return `
+            <li class="queue-item" data-id="${msg.id}">
+                <div class="item-details">
+                    <span class="item-email">${msg.sendingEmail}</span>
+                    <span class="item-id">${msg.id}</span>
+                    <span class="item-time">${timeText}</span>
+                </div>
+                <div class="item-status ${statusClass}">
+                    <span>${statusIcon}</span>
+                    ${statusText}
+                </div>
+            </li>
+        `;
+    };
+
+    const fetchMessages = async () => {
+        try {
+            const res = await fetch('/api/newsletters/test-messages');
+            if (!res.ok) throw new Error('Failed to fetch');
+            const messages = await res.json();
+            
+            queueCount.innerText = `${messages.length} total captured`;
+
+            if (messages.length === 0) {
+                if (isInitialLoad) {
+                    queueList.innerHTML = '<div class="empty-state">No messages the queue yet. Send one above!</div>';
+                    isInitialLoad = false;
+                }
+                return;
+            }
+
+            // We do a full re-render for simplicity, but in a real massive app we'd do diffing.
+            // However, to keep animations pure, we can just replace DOM safely since it's a small internal dashboard.
+            const html = messages.map(m => renderMessage(m)).join('');
+            queueList.innerHTML = html;
+
+            isInitialLoad = false;
+        } catch (error) {
+            console.error('Polling error:', error);
+            if (isInitialLoad) {
+                queueList.innerHTML = '<div class="empty-state">Unable to connect to service. Ensure API is running.</div>';
+            }
+        }
+    };
+
+    // Start tracking
+    fetchMessages();
+    startPolling();
+
+</script>
+</body>
+</html>

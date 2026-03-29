@@ -1,16 +1,16 @@
-﻿using FastEndpoints;
+using FastEndpoints;
 using MassTransit;
 using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Messages;
 
 namespace Newsletter.Api.Features.Newsletters.Endpoints;
 
-public class TestEndpoint(IPublishEndpoint publisher, NewsletterDbContext dbContext)
+public class SubmitTestNewsletterEndpoint(IPublishEndpoint publisher, NewsletterDbContext dbContext)
     : Endpoint<SubscribeToNewsletter, TrackIdResponse>
 {
     public override void Configure()
     {
-        Post("/newsletter/test");
+        Post("/api/newsletters/test");
         AllowAnonymous();
     }
 

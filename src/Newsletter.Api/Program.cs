@@ -39,6 +39,9 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Enable endpoints and FastEndpoints' Swagger middleware
 app.UseFastEndpoints()
     .UseSwaggerGen();
