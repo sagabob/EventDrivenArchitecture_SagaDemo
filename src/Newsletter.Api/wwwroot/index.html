@@ -232,6 +232,27 @@
             color: var(--border-color);
         }
 
+        button.btn-clear {
+            padding: 0.4rem 0.8rem;
+            background-color: transparent;
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.45);
+            border-radius: 0.4rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button.btn-clear:hover:not(:disabled) {
+            background-color: rgba(248, 113, 113, 0.12);
+            border-color: #f87171;
+        }
+
+        button.btn-clear:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
         .queue-list {
             list-style: none;
             max-height: 500px;
@@ -502,6 +523,7 @@
                     <span class="toggle-label">Auto</span>
                 </label>
                 <button id="refreshBtn" class="btn-refresh" disabled>Refresh</button>
+                <button type="button" id="clearTestMessagesBtn" class="btn-clear" title="Delete all rows in TestSendingMessages">Clear test messages</button>
                 <span id="queueCount" style="color: var(--text-muted); font-size: 0.9rem; margin-left: 0.5rem;">0 queued</span>
             </div>
         </div>
@@ -524,6 +546,7 @@
         <div class="queue-header">
             <h2>Subscribers</h2>
             <div class="header-controls">
+                <button type="button" id="clearSubscribersBtn" class="btn-clear" title="Delete all subscribers and onboarding saga rows">Clear subscribers</button>
                 <span id="subscriberCount" style="color: var(--text-muted); font-size: 0.9rem;">0 rows</span>
             </div>
         </div>
@@ -582,6 +605,8 @@
     const liveIndicator = document.getElementById('liveIndicator');
     const autoMonitorToggle = document.getElementById('autoMonitorToggle');
     const refreshBtn = document.getElementById('refreshBtn');
+    const clearTestMessagesBtn = document.getElementById('clearTestMessagesBtn');
+    const clearSubscribersBtn = document.getElementById('clearSubscribersBtn');
     const subscriberTableBody = document.getElementById('subscriberTableBody');
     const subscriberCount = document.getElementById('subscriberCount');
 
@@ -633,6 +658,50 @@
         Promise.all([fetchMessages(), fetchSubscribers()]).finally(() => {
             refreshBtn.innerText = 'Refresh';
         });
+    });
+
+    clearTestMessagesBtn.addEventListener('click', async () => {
+        if (!confirm('Delete all test message rows? This cannot be undone.')) return;
+        const original = clearTestMessagesBtn.innerText;
+        try {
+            clearTestMessagesBtn.disabled = true;
+            clearTestMessagesBtn.innerText = 'Clearing…';
+            const res = await fetch('/api/newsletters/test-messages', { method: 'DELETE' });
+            if (!res.ok) {
+                alert('Failed to clear test messages.');
+                return;
+            }
+            isInitialLoad = true;
+            await fetchMessages();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to connect to API.');
+        } finally {
+            clearTestMessagesBtn.innerText = original;
+            clearTestMessagesBtn.disabled = false;
+        }
+    });
+
+    clearSubscribersBtn.addEventListener('click', async () => {
+        if (!confirm('Delete all subscribers and reset onboarding sagas? This cannot be undone.')) return;
+        const original = clearSubscribersBtn.innerText;
+        try {
+            clearSubscribersBtn.disabled = true;
+            clearSubscribersBtn.innerText = 'Clearing…';
+            const res = await fetch('/api/newsletters/subscribers', { method: 'DELETE' });
+            if (!res.ok) {
+                alert('Failed to clear subscribers.');
+                return;
+            }
+            subscribersInitial = true;
+            await fetchSubscribers();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to connect to API.');
+        } finally {
+            clearSubscribersBtn.innerText = original;
+            clearSubscribersBtn.disabled = false;
+        }
     });
 
     let knownMessageIds = new Set();
