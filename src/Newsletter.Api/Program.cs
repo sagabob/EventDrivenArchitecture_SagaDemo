@@ -3,6 +3,7 @@ using FastEndpoints.Swagger;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Newsletter.Api.Databases;
+using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Handlers;
 
 var builder = WebApplication.CreateBuilder();
@@ -35,6 +36,23 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
+
+builder.Services.Configure<BrevoOptions>(
+    builder.Configuration.GetSection(BrevoOptions.SectionName));
+
+builder.Services.AddTransient<brevo_csharp.Api.ITransactionalEmailsApi>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BrevoOptions>>().Value;
+
+    var config = new brevo_csharp.Client.Configuration
+    {
+        ApiKey = { ["api-key"] = options.ApiKey }
+    };
+
+    return new brevo_csharp.Api.TransactionalEmailsApi(config);
+});
+
+builder.Services.AddTransient<IEmailService, BrevoEmailService>();
 
 
 var app = builder.Build();

@@ -1,40 +1,53 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Newsletter.Api.Databases;
+using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Messages;
 
 namespace Newsletter.Api.Features.Newsletters.Handlers;
 
-public class TestSendNewsletterHandler(NewsletterDbContext dbContext) : IConsumer<TestSendNewsletter>
+public class TestSendNewsletterHandler(NewsletterDbContext dbContext, IEmailService emailService) : IConsumer<TestSendNewsletter>
 {
     public async Task Consume(ConsumeContext<TestSendNewsletter> context)
     {
-        var msgId = context.Message.MessageId;
-        var email = context.Message.Email;
-        var ct = context.CancellationToken;
-
-        var record = await dbContext.TestSendingMessages.FirstOrDefaultAsync(r => r.Id == msgId, ct);
-
-        if (record is not null)
+        try
         {
-            record.ReceivedEmail = email;
-            record.ReceiveOnUtc = DateTime.UtcNow;
+            var msgId = context.Message.MessageId;
+            var email = context.Message.Email;
+            var ct = context.CancellationToken;
 
-            // No explicit Update required when the entity is tracked, but harmless
-            dbContext.TestSendingMessages.Update(record);
+            await emailService.SendTestEmailAsync(context.Message.Email);
 
-            Console.WriteLine($"Updated record for MessageId: {msgId}, Email: {email}");
+            var record = await dbContext.TestSendingMessages.FirstOrDefaultAsync(r => r.Id == msgId, ct);
 
-            await dbContext.SaveChangesAsync(ct);
+            if (record is not null)
+            {
+                record.ReceivedEmail = email;
+                record.ReceiveOnUtc = DateTime.UtcNow;
 
-            Console.WriteLine($"Sending test newsletter to: {context.Message.Email}");
+                // No explicit Update required when the entity is tracked, but harmless
+                dbContext.TestSendingMessages.Update(record);
+
+                Console.WriteLine($"Updated record for MessageId: {msgId}, Email: {email}");
+
+                await dbContext.SaveChangesAsync(ct);
+
+                Console.WriteLine($"Sending test newsletter to: {context.Message.Email}");
+            }
+            else
+            {
+                Console.WriteLine($"Sending test newsletter to: {context.Message.Email} is not received");
+
+                //TODO
+                //Notify Admin
+            }
         }
-        else
+        catch (Exception e)
         {
-            Console.WriteLine($"Sending test newsletter to: {context.Message.Email} is not received");
-
+            // Log the exception
+            Console.WriteLine($"Error processing TestSendNewsletter: {e.Message}");
             //TODO
-            //Notify Admin
         }
+
     }
 }
