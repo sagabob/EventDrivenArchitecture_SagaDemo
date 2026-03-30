@@ -37,8 +37,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha
+          tags: |            
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ steps.dt.outputs.value }}
 
