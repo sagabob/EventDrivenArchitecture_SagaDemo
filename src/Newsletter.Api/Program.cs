@@ -5,9 +5,11 @@ using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Newsletter.Api.Databases;
+using Newsletter.Api.Extensions;
 using Newsletter.Api.Features.Newsletters.Configuration;
 using Newsletter.Api.Features.Newsletters.Emails;
 using Newsletter.Api.Features.Newsletters.Extensions;
+using Newsletter.Api.Features.Newsletters.Services;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -22,8 +24,12 @@ builder.Services.AddFastEndpoints()
         };
     });
 
+builder.Services.AddProblemDetails();
+
 builder.Services.AddDbContext<NewsletterDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
+
+builder.Services.AddScoped<ISubscribeNewsletterService, SubscribeToNewsletterService>();
 
 builder.Services.AddNewsletterMassTransit(builder.Configuration);
 
@@ -49,6 +55,8 @@ builder.Services.AddTransient<IEmailService, BrevoEmailService>();
 
 
 var app = builder.Build();
+
+app.UseGlobalExceptionHandling();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

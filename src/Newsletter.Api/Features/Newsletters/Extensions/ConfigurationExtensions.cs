@@ -45,13 +45,12 @@ public static class ConfigurationExtensions
                     cb.ResetInterval = TimeSpan.FromMinutes(5);
                 });
 
-                cfg.UseDelayedRedelivery(r => r.Intervals(
-                    TimeSpan.FromMinutes(5),
-                    TimeSpan.FromMinutes(15),
-                    TimeSpan.FromMinutes(30)
-                ));
-
                 cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+
+                // Avoid host-level UseDelayedRedelivery: after immediate retries it reschedules the
+                // message (e.g. 5 / 15 / 30 min). Fault<T> is published only after those delayed
+                // attempts are exhausted, so saga Fault events and IConsumer<Fault<T>> look like
+                // they never run for a long time.
 
                 cfg.ConfigureEndpoints(context);
             });

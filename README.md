@@ -2,7 +2,7 @@
 
 ## Overview
 
-A .NET 10 Web API that demonstrates **event-driven** newsletter onboarding using **FastEndpoints**, **MassTransit** with **RabbitMQ**, **EF Core** (PostgreSQL), and a **MassTransit saga** for orchestration. It includes the **transactional outbox** pattern, **inbox** support, **RabbitMQ resilience** (retry, delayed redelivery, circuit breaker), and a small **static dashboard** (`wwwroot/index.html`) for test messages and subscriber progress.
+A .NET 10 Web API that demonstrates **event-driven** newsletter onboarding using **FastEndpoints**, **MassTransit** with **RabbitMQ**, **EF Core** (PostgreSQL), and a **MassTransit saga** for orchestration. It includes the **transactional outbox** pattern, **inbox** support, **RabbitMQ resilience** (retry and circuit breaker), and a small **static dashboard** (`wwwroot/index.html`) for test messages and subscriber progress.
 
 ---
 
@@ -158,11 +158,17 @@ This section describes **what this repository configures**, not every MassTransi
 
 | Mechanism | What it does here |
 |-----------|-------------------|
-| **Message retry** (`UseMessageRetry`) | Retries consumer handling a few times with a short interval for **transient** errors. |
-| **Delayed redelivery** (`UseDelayedRedelivery`) | Schedules later retries (e.g. 5 / 15 / 30 minutes) after immediate retries fail. |
+| **Message retry** (`UseMessageRetry`) | Retries consumer handling a few times with a short interval for **transient** errors. After retries exhaust, typed faults (e.g. `Fault<SendFollowUpEmail>`) are published so the saga and fault handlers run promptly. Host-level delayed redelivery is not used here because it defers fault publication until long after the last delayed attempt. |
 | **Circuit breaker** (`UseCircuitBreaker`) | Backs off when failure rates are high. |
 | **Saga fault events** (`Fault<SendWelcomeEmail>`, `Fault<SendFollowUpEmail>`) | Saga moves to **Faulted**; handlers can update **Subscriber** for visibility. |
 | **RabbitMQ** | **At-least-once** delivery; combined with inbox/retry/redelivery, the system tolerates duplicates and transient failures better. |
+
+### HTTP exception handling
+
+- Global API exception handling is registered via `UseGlobalExceptionHandling()` in `Program.cs`.
+- Implementation lives in `Extensions/ExceptionHandlingExtensions.cs`.
+- Unhandled HTTP exceptions are logged and returned as **Problem Details** (`500`).
+- Error detail is returned only in Development.
 
 ### Configuration
 

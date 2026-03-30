@@ -13,13 +13,14 @@ public class OnboardingCompletedHandler(NewsletterDbContext dbContext, ILogger<O
         var subscriber = await dbContext.Subscribers
             .FirstOrDefaultAsync(s => s.Id == context.Message.SubscriberId, context.CancellationToken);
 
-        if (subscriber is not null)
-        {
-            subscriber.OnboardingStatus = SubscriberOnboardingStatus.Completed;
-            subscriber.OnboardingCompletedAtUtc = DateTime.UtcNow;
-            subscriber.OnboardingFaultReason = null;
-            await dbContext.SaveChangesAsync(context.CancellationToken);
-        }
+        if (subscriber is null)
+            throw new InvalidOperationException($"Subscriber {context.Message.SubscriberId} was not found.");
+
+
+        subscriber.OnboardingStatus = SubscriberOnboardingStatus.Completed;
+        subscriber.OnboardingCompletedAtUtc = DateTime.UtcNow;
+        subscriber.OnboardingFaultReason = null;
+        await dbContext.SaveChangesAsync(context.CancellationToken);
 
         logger.LogInformation("Onboarding completed for subscriber {SubscriberId}", context.Message.SubscriberId);
     }

@@ -14,12 +14,12 @@ public class SendFollowUpEmailHandler(NewsletterDbContext dbContext, IEmailServi
         var subscriber = await dbContext.Subscribers
             .FirstOrDefaultAsync(s => s.Id == context.Message.SubscriberId, context.CancellationToken);
 
-        if (subscriber is not null)
-        {
-            subscriber.OnboardingStatus = SubscriberOnboardingStatus.FollowingUp;
-            subscriber.OnboardingFaultReason = null;
-            await dbContext.SaveChangesAsync(context.CancellationToken);
-        }
+        if (subscriber is null)
+            throw new InvalidOperationException($"Subscriber {context.Message.SubscriberId} was not found.");
+
+        subscriber.OnboardingStatus = SubscriberOnboardingStatus.FollowingUp;
+        subscriber.OnboardingFaultReason = null;
+        await dbContext.SaveChangesAsync(context.CancellationToken);
 
         await emailService.SendFollowUpEmailAsync(context.Message.Email);
 

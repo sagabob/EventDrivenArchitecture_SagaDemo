@@ -1,11 +1,10 @@
 using FastEndpoints;
-using MassTransit;
-using Newsletter.Api.Databases;
 using Newsletter.Api.Features.Newsletters.Messages;
+using Newsletter.Api.Features.Newsletters.Services;
 
 namespace Newsletter.Api.Features.Newsletters.Endpoints;
 
-public class SubscribeNewsletterEndpoint(IPublishEndpoint publisher, NewsletterDbContext dbContext)
+public class SubscribeNewsletterEndpoint(ISubscribeNewsletterService subscribeNewsletterService)
     : Endpoint<SubscribeToNewsletter, string>
 {
     public override void Configure()
@@ -16,10 +15,7 @@ public class SubscribeNewsletterEndpoint(IPublishEndpoint publisher, NewsletterD
 
     public override async Task HandleAsync(SubscribeToNewsletter req, CancellationToken ct)
     {
-        // Bus outbox: Publish stages the message; SaveChanges commits OutboxMessage so it can reach RabbitMQ.
-        await publisher.Publish(req, ct);
-        await dbContext.SaveChangesAsync(ct);
-
-        await Send.OkAsync("Subscription request accepted.", ct);
+        var subscriber = await subscribeNewsletterService.SubscribeAsync(req.Email, ct);
+        await Send.OkAsync($"Subscription request accepted. Id: {subscriber.Id}", ct);
     }
 }
