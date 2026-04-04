@@ -2,8 +2,7 @@
 
 ## Overview
 
-A .NET 10 Web API that demonstrates **event-driven** newsletter onboarding using **FastEndpoints**, **MassTransit** with **RabbitMQ**, **EF Core** (PostgreSQL), and a **MassTransit saga** for orchestration. It includes the **transactional outbox** pattern, **inbox** support, **RabbitMQ resilience** (retry and circuit breaker), and a small **static dashboard** (`wwwroot/index.html`) for test messages and subscriber progress.
-To see how it works, please visit the link https://tdp-newsletter-api-jdlq9.ondigitalocean.app/
+A .NET 10 Web API that demonstrates **event-driven** newsletter onboarding using **FastEndpoints**, **MassTransit** with **RabbitMQ**, **EF Core** (PostgreSQL), and a **MassTransit saga** for orchestration. It includes the **transactional outbox** pattern, **inbox** support, **RabbitMQ resilience** (retry and circuit breaker), and a small **static dashboard** (`wwwroot/index.html`) for test messages and subscriber progress. To see how it works, please visit the link https://tdp-newsletter-api-jdlq9.ondigitalocean.app/
 ---
 
 ## How to read the flow below
